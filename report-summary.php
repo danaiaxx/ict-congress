@@ -1,4 +1,8 @@
-<?php include "db.php"; ?>
+<?php 
+    include "db.php"; 
+    date_default_timezone_set('Asia/Manila');
+?>
+
 <a href="index.php">Back</a>
 <h2>Summary Report</h2>
 

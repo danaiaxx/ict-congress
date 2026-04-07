@@ -1,8 +1,21 @@
-<?php include "db.php"; ?>
+<?php 
+    include "db.php"; 
+    session_start();
+?>
 
 <?php
-$message = '';
 $displayResult = null;
+
+if (isset($_POST['cancel'])){
+        $idNum = $_POST['idNum'];
+
+        $conn->query("UPDATE registration set attended='No' WHERE idNum=$idNum");
+
+        $_SESSION['msg'] = 'Student attendance has been cancelled!';
+
+        header("Location: attendance.php");
+        exit();
+    }
 
 // ===== MARK ATTENDANCE =====
 if (isset($_POST['mark'])) {
@@ -14,14 +27,14 @@ if (isset($_POST['mark'])) {
     } else {
         $student = $check->fetch_assoc();
         if ($student['attended'] == 'Yes') {
-            $message = "Student's Attendance RECORD ALREADY EXISTS";
+            $_SESSION['msg'] = 'Student Attendance RECORD ALREADY EXISTS';
         } else {
             $conn->query("UPDATE registration SET attended='Yes' WHERE idNum=$idNum");
-            $message = "Student Attendance is SUCCESSFULLY RECORDED";
+            $_SESSION['msg'] = 'Student Attendance is SUCCESSFULLY RECORDED';
         }
     }
     // Display only this student after marking
-    $displayResult = $conn->query("SELECT * FROM registration WHERE idNum=$idNum");
+    $displayResult = $conn->query("SELECT * FROM registration");
 }
 
 // ===== SEARCH STUDENT =====
@@ -34,7 +47,7 @@ elseif (isset($_POST['search'])) {
     } else {
         $student = $displayResult->fetch_assoc();
         if ($student['attended'] == 'Yes') {
-            $message = "Student's Attendance RECORD ALREADY EXISTS";
+            $_SESSION['msg'] = 'Student Attendance RECORD ALREADY EXISTS';
         }
         // else: student exists, not marked → no message
         // reset pointer for display
@@ -50,6 +63,21 @@ else {
 
 <a href="index.php">Back</a>
 <h2>Attendance</h2>
+
+<! display message !>
+<!-- Success Message -->
+<?php if (isset($_SESSION['msg'])): ?>
+    <div class="alert alert-success" style="color: green;">
+        <?= $_SESSION['msg']; unset($_SESSION['msg']); ?>
+    </div>
+<?php endif; ?>
+
+<!-- Error Message -->
+<?php if (isset($_SESSION['msg_error'])): ?>
+    <div class="alert alert-danger" style="color: red;">
+        <?= $_SESSION['msg_error']; unset($_SESSION['msg_error']); ?>
+    </div>
+<?php endif; ?>
 
 <?php if (!empty($message)): ?>
     <p style="color:blue; font-weight:bold;"><?= $message ?></p>
@@ -85,6 +113,10 @@ else {
             </form>
         <?php else: ?>
             Attended
+            <form method="POST" style="display:inline;">
+                <input type="hidden" name="idNum" value="<?= $row['idNum'] ?>">
+                <button type="submit" name="cancel">Cancel</button>
+            </form>
         <?php endif; ?>
     </td>
 </tr>

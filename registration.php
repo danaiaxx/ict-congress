@@ -1,7 +1,6 @@
 <?php
-error_reporting(0);
-ini_set('display_errors', 0);
 include "db.php";
+session_start();
 ?>
 
 <?php
@@ -13,17 +12,28 @@ if (isset($_POST['add'])){
     $studLName = $_POST['studLName'];
     $amountPaid = $_POST['amountPaid'];
 
-    $conn->query("INSERT INTO registration (idNum, campus, studFName, studLName, amountPaid, attended)
-    VALUES ('$idNum','$campus','$studFName','$studLName','$amountPaid','No')");
+    $check = $conn->query("SELECT * FROM registration WHERE idNum='$idNum' OR 
+    (studFName='$studFName' AND studLName='$studLName')");
 
-    header("Location: registration.php");
-    exit();
+    if ($check->num_rows > 0) {
+            $_SESSION['msg_error'] = 'Student already exists. Please input another.';
+    } else {
+        $conn->query("INSERT INTO registration (idNum, campus, studFName, studLName, amountPaid, attended)
+        VALUES ('$idNum','$campus','$studFName','$studLName','$amountPaid','No')");
+
+        $_SESSION['msg'] = 'Student is successfully ADDED!';
+
+        header("Location: registration.php");
+        exit();
+    }
 }
 
 // ===== DELETE =====
 if (isset($_GET['delete'])){
     $idNum = $_GET['delete'];
     $conn->query("DELETE FROM registration WHERE idNum=$idNum");
+
+    $_SESSION['msg'] = 'Student is successfully DELETED!';
 
     header("Location: registration.php");
     exit();
@@ -47,10 +57,11 @@ if (isset($_POST['update'])){
     $studLName = $_POST['studLName'];
     $amountPaid = $_POST['amountPaid'];
 
-    $check = $conn->query("SELECT * FROM registration WHERE idNum='$newidNum' AND idNum != '$idNum'");
+    $check = $conn->query("SELECT * FROM registration WHERE (idNum='$newidNum' OR 
+    (studFName='$studFName' AND studLName='$studLName')) AND idNum != '$idNum'");
 
     if ($check->num_rows > 0) {
-        echo "<p style='color:red;'>ID already exists. Please use another ID.</p>";
+        $_SESSION['msg_error'] = 'Student already exists. Please input another';
     } else {
         $conn->query("UPDATE registration SET 
             idNum='$newidNum',
@@ -59,6 +70,8 @@ if (isset($_POST['update'])){
             studLName='$studLName',
             amountPaid='$amountPaid'
             WHERE idNum='$idNum'");
+
+            $_SESSION['msg'] = 'Student is successfully UPDATED!';
 
         header("Location: registration.php");
         exit();
@@ -69,9 +82,24 @@ if (isset($_POST['update'])){
 $result = $conn->query("SELECT * FROM registration");
 ?>
 
-<a href="index.php">Back</a>
+    <a href="index.php">Back</a>
 
 <h2>Register a Student</h2>
+
+<! display message !>
+<!-- Success Message -->
+<?php if (isset($_SESSION['msg'])): ?>
+    <div class="alert alert-success" style="color: green;">
+        <?= $_SESSION['msg']; unset($_SESSION['msg']); ?>
+    </div>
+<?php endif; ?>
+
+<!-- Error Message -->
+<?php if (isset($_SESSION['msg_error'])): ?>
+    <div class="alert alert-danger" style="color: red;">
+        <?= $_SESSION['msg_error']; unset($_SESSION['msg_error']); ?>
+    </div>
+<?php endif; ?>
 
 <form method="POST">
 <input type="hidden" name="id" value="<?= $editData['idNum'] ?? '' ?>">
